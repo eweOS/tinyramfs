@@ -1,0 +1,9 @@
+# vim: set ft=sh:
+
+for _mod in cdrom loop overlay squashfs; do
+    copy_kmod "$_mod"
+done
+
+for _bin in blockdev cp losetup umount; do
+    copy_exec "$_bin"
+done
