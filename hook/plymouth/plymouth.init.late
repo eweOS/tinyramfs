@@ -1,0 +1,4 @@
+
+if [ -f "/usr/sbin/plymouthd" ] && [ -f /usr/bin/plymouth ] && [ ! -z $plymouth_earlyquit ]; then
+        /usr/bin/plymouth quit
+fi

@@ -1,0 +1,12 @@
+
+if [ -z $plymouth_nocopymodule ] && [ -z $monolith ] && [ -z $hostonly ]; then
+  cd "${moddir}/${kernel}/kernel" && \
+    find drivers/gpu/drm -type f 2> /dev/null |
+      while read -r _mod; do
+        copy_file "$_mod" "/lib/modules/${kernel}/kernel/${_mod}" 0644
+      done
+fi
+
+if [[ -x /usr/lib/plymouth/plymouth-populate-initrd ]]; then
+  /usr/lib/plymouth/plymouth-populate-initrd -t ${tmpdir}
+fi
