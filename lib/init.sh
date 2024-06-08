@@ -43,13 +43,17 @@ parse_cmdline()
     # https://kernel.org/doc/html/latest/admin-guide/kernel-parameters.html
     # ... parameters with '=' go into init's environment ...
     for _param in $cmdline; do case $_param in
+        # pass to init
+	--)           init_args+=${cmdline#*--}; break ;;
+	quiet)        init_args+=" --quiet" ;;
+
         rdpanic) trap - EXIT ;;
         rddebug) set -x ;;
+	break) break_init=1 ;;
 
         # Maintain backward compatibility with kernel parameters.
         ro | rw)      rorw=$_param ;;
         rootwait)     root_wait=-1 ;;
-        --)           init_args=${cmdline##*--}; break ;;
         rootfstype=*) root_type=${_param#*=} ;;
         rootflags=*)  root_opts=${_param#*=} ;;
         rootdelay=*)  root_wait=${_param#*=} ;;
@@ -113,6 +117,7 @@ trap panic EXIT
 
 init_base
 parse_cmdline
+(test $break_init && sh) || :
 eval_hooks init
 mount_root
 eval_hooks init.late
