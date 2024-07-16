@@ -11,6 +11,11 @@ print()
 
 panic()
 {
+
+    if [ -f "/usr/sbin/plymouthd" ] && [ -f /usr/bin/plymouth ]; then
+        /usr/bin/plymouth quit
+    fi
+
     print "${1:-unexpected error occurred}" '!>' >&2
 
     if [ "$$" = 1 ]; then

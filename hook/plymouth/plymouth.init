@@ -1,5 +1,5 @@
 
-if [ -f "/usr/sbin/plymouthd" ] && [ -f /usr/bin/plymouth ]; then
+if [ -f "/usr/sbin/plymouthd" ] && [ -f /usr/bin/plymouth ] && [ -z $plymouth_nosplash ]; then
         mkdir -p /run/plymouth
         /usr/sbin/plymouthd --pid-file /run/plymouth/pid --mode=boot --ignore-serial-consoles
         /usr/bin/plymouth show-splash

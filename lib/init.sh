@@ -58,6 +58,7 @@ parse_cmdline()
         rootflags=*)  root_opts=${_param#*=} ;;
         rootdelay=*)  root_wait=${_param#*=} ;;
         init=*)       init=${_param#*=} ;;
+        nosplash=*)   plymouth_nosplash=1 ;;
     esac; done
 }
 
