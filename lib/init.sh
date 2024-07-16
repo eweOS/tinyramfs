@@ -59,6 +59,7 @@ parse_cmdline()
         rootdelay=*)  root_wait=${_param#*=} ;;
         init=*)       init=${_param#*=} ;;
         nosplash=*)   plymouth_nosplash=1 ;;
+        live=*)       live_profile=${_param#*=} ;;
     esac; done
 }
 
