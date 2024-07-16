@@ -118,7 +118,7 @@ trap panic EXIT
 
 init_base
 parse_cmdline
-(test $break_init && sh) || :
+(test $break_init && busybox --install && sh) || :
 eval_hooks init
 mount_root
 eval_hooks init.late
