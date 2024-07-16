@@ -19,6 +19,7 @@ panic()
     print "${1:-unexpected error occurred}" '!>' >&2
 
     if [ "$$" = 1 ]; then
+        busybox --install
         sh
     else
         exit 1
