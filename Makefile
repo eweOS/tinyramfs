@@ -24,9 +24,6 @@ uninstall:
 	rm -f  ${DESTDIR}${MANDIR}/man8/tinyramfs.8
 	rm -rf ${DESTDIR}${LIBDIR}/tinyramfs
 
-check:
-	(cd test && ${MAKE})
-
 doc:
 	scdoc < doc/tinyramfs.5.scd > doc/tinyramfs.5
 	scdoc < doc/tinyramfs.8.scd > doc/tinyramfs.8
