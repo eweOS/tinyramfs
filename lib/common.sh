@@ -29,6 +29,7 @@ panic()
 copy_file()
 (
     file=$1; dest=$2
+    [ "$dest" ] || dest=$file
 
     [ -e "${tmpdir}/${dest}" ] && return
 
@@ -101,7 +102,19 @@ copy_kmod()
     modprobe -S "$kernel" -D "$1" 2> /dev/null |
 
     while read -r _ _mod _ || [ "$_mod" ]; do
-        case $_mod in /*) copy_file "$_mod" "$_mod" 0644; esac
+        case $_mod in
+            /*)
+                copy_file "$_mod"
+                modinfo -F firmware "$_mod" |
+                    while read -r _firmware || [ "$_firmware" ]; do
+                        if [ ! -f /lib/firmware/$_firmware ]; then
+                            echo "missing firmware for $_mod: $_firmware"
+                        else
+                            copy_file "/lib/firmware/$_firmware"
+                        fi
+                    done
+                ;;
+        esac
     done
 }
 
