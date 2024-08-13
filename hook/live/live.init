@@ -15,7 +15,7 @@ mkdir -p "$medium" "$system" /run/initramfs/overlayfs/work /run/initramfs/overla
 mount -o ro "/dev/disk/by-$live_disk_type/$live_disk" "$medium" || panic
 
 mkdir -p /run/initramfs/ram
-[ "$ram" ] && mount -t tmpfs -o "${live_ram_opts:?}" ram /run/initramfs/ram || panic
+[ "$ram" == "1" ] && ( mount -t tmpfs -o "${live_ram_opts:?}" ram /run/initramfs/ram || panic )
 
 if [ -z "$live_profile" ]; then
     live_profile=live
@@ -44,4 +44,4 @@ done < "$medium/live/${live_profile}.list"
 root_opts_arg=`tac $medium/live/${live_profile}.list | sed "/^$/d; s@^@$system/@" | tr '\n' ':'`
 root_opts="lowerdir=${root_opts_arg%:},upperdir=/run/initramfs/overlayfs/write,workdir=/run/initramfs/overlayfs/work"
 
-[ "$ram" ] && umount "$medium"
+[ "$ram" == "1" ] && umount "$medium"

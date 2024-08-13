@@ -60,6 +60,7 @@ parse_cmdline()
         init=*)       init=${_param#*=} ;;
         nosplash=*)   plymouth_nosplash=1 ;;
         live=*)       live_profile=${_param#*=} ;;
+        ram=*)        ram=${_param#*=} ;;
     esac; done
 }
 
