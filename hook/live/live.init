@@ -15,7 +15,9 @@ mkdir -p "$medium" "$system" /run/initramfs/overlayfs/work /run/initramfs/overla
 mount -o ro "/dev/disk/by-$live_disk_type/$live_disk" "$medium" || panic
 
 mkdir -p /run/initramfs/ram
-[ "$ram" == "1" ] && ( mount -t tmpfs -o "${live_ram_opts:?}" ram /run/initramfs/ram || panic )
+if [ "$ram" == "1" ]; then
+    mount -t tmpfs -o "${live_ram_opts:?}" ram /run/initramfs/ram || panic
+fi
 
 if [ -z "$live_profile" ]; then
     live_profile=live
@@ -30,10 +32,10 @@ do
     sfsimg="$line"
     sfsimg_path="$medium/live/sfs/$sfsimg.sfs"
     
-    [ "$ram" ] && {
+    if [ "$ram" == "1" ]; then
         cp "${sfsimg_path}" /run/initramfs/ram/ || panic
         sfsimg_path="/run/initramfs/ram/$sfsimg.sfs"
-    }
+    fi
 
     sfsdev=$(losetup -f)
     losetup -r "$sfsdev" "$sfsimg_path"
@@ -44,4 +46,6 @@ done < "$medium/live/${live_profile}.list"
 root_opts_arg=`tac $medium/live/${live_profile}.list | sed "/^$/d; s@^@$system/@" | tr '\n' ':'`
 root_opts="lowerdir=${root_opts_arg%:},upperdir=/run/initramfs/overlayfs/write,workdir=/run/initramfs/overlayfs/work"
 
-[ "$ram" == "1" ] && umount "$medium"
+if [ "$ram" == "1" ]; then
+    umount "$medium"
+fi
