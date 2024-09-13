@@ -12,7 +12,9 @@ mkdir -p "$medium" "$system" /run/initramfs/overlayfs/work /run/initramfs/overla
 
 [ -h "/dev/disk/by-$live_disk_type/$live_disk" ] || sleep 5
 
-mount -o ro "/dev/disk/by-$live_disk_type/$live_disk" "$medium" || panic
+live_disk_fs=${live_disk_fs:-iso9660}
+
+mount -t ${live_disk_fs} -o ro "/dev/disk/by-$live_disk_type/$live_disk" "$medium" || panic
 
 mkdir -p /run/initramfs/ram
 if [ "$ram" == "1" ]; then
