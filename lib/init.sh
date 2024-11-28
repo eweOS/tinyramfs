@@ -44,12 +44,12 @@ parse_cmdline()
     # ... parameters with '=' go into init's environment ...
     for _param in $cmdline; do case $_param in
         # pass to init
-	--)           init_args+=${cmdline#*--}; break ;;
-	quiet)        init_args+=" --quiet" ;;
+        --)           init_args+=${cmdline#*--}; break ;;
+        quiet)        init_args+=" --quiet" ;;
 
         rdpanic) trap - EXIT ;;
         rddebug) set -x ;;
-	break) break_init=1 ;;
+        break) break_init=1 ;;
 
         # Maintain backward compatibility with kernel parameters.
         ro | rw)      rorw=$_param ;;
