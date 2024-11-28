@@ -14,8 +14,6 @@ install:
 	cp -f lib/init.sh   ${DESTDIR}${LIBDIR}/tinyramfs/
 	cp -f lib/helper.sh ${DESTDIR}${LIBDIR}/tinyramfs/
 	cp -f lib/common.sh ${DESTDIR}${LIBDIR}/tinyramfs/
-	cp -f doc/tinyramfs.5   ${DESTDIR}${MANDIR}/man5/
-	cp -f doc/tinyramfs.8   ${DESTDIR}${MANDIR}/man8/
 	cp -R hook          ${DESTDIR}${LIBDIR}/tinyramfs/hook.d
 
 uninstall:
@@ -24,11 +22,10 @@ uninstall:
 	rm -f  ${DESTDIR}${MANDIR}/man8/tinyramfs.8
 	rm -rf ${DESTDIR}${LIBDIR}/tinyramfs
 
+lint:
+	shellcheck hook/*/* lib/* tinyramfs *.conf
+
 check:
 	(cd test && ${MAKE})
 
-doc:
-	scdoc < doc/tinyramfs.5.scd > doc/tinyramfs.5
-	scdoc < doc/tinyramfs.8.scd > doc/tinyramfs.8
-
-.PHONY: install uninstall check doc
+.PHONY: install uninstall
