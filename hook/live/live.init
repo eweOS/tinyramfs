@@ -14,11 +14,11 @@ mkdir -p "$medium" "$system" /run/initramfs/overlayfs/work /run/initramfs/overla
 
 live_disk_fs=${live_disk_fs:-iso9660}
 
-mount -t ${live_disk_fs} -o ro "/dev/disk/by-$live_disk_type/$live_disk" "$medium" || panic
+mount -t ${live_disk_fs} -o ro "/dev/disk/by-$live_disk_type/$live_disk" "$medium" || panic "unable to mount live medium"
 
 mkdir -p /run/initramfs/ram
 if [ "$ram" == "1" ]; then
-    mount -t tmpfs -o "${live_ram_opts:?}" ram /run/initramfs/ram || panic
+    mount -t tmpfs -o "${live_ram_opts:?}" ram /run/initramfs/ram || panic "unable to mount ramdisk for live"
 fi
 
 if [ -z "$live_profile" ]; then
@@ -26,7 +26,7 @@ if [ -z "$live_profile" ]; then
 fi
 
 if [ ! -f "$medium/live/${live_profile}.list" ]; then
-    panic
+    panic "live profile not found"
 fi
 
 while IFS= read -r line
@@ -35,14 +35,14 @@ do
     sfsimg_path="$medium/live/sfs/$sfsimg.sfs"
     
     if [ "$ram" == "1" ]; then
-        cp "${sfsimg_path}" /run/initramfs/ram/ || panic
+        cp "${sfsimg_path}" /run/initramfs/ram/ || panic "unable to copy squashfs, insufficient memory?"
         sfsimg_path="/run/initramfs/ram/$sfsimg.sfs"
     fi
 
     sfsdev=$(losetup -f)
     losetup -r "$sfsdev" "$sfsimg_path"
     mkdir -p "$system/$sfsimg"
-    mount -t squashfs -o "${live_sfs_opts:-defaults,ro}" "$sfsdev" "$system/$sfsimg" || panic
+    mount -t squashfs -o "${live_sfs_opts:-defaults,ro}" "$sfsdev" "$system/$sfsimg" || panic "can not mount overlay squashfs"
 done < "$medium/live/${live_profile}.list"
 
 root_opts_arg=`tac $medium/live/${live_profile}.list | sed "/^$/d; s@^@$system/@" | tr '\n' ':'`

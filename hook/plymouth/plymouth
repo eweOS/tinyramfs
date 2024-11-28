@@ -1,10 +1,19 @@
 
-if [ -z $plymouth_nocopymodule ] && [ -z $monolith ] && [ -z $hostonly ]; then
+if [ -z $plymouth_nocopymodule ] && [ -z $monolith ]; then
+  if [ -z $hostonly ]; then
   cd "${moddir}/${kernel}/kernel" && \
     find drivers/gpu/drm -type f 2> /dev/null |
       while read -r _mod; do
-        copy_file "$_mod" "/lib/modules/${kernel}/kernel/${_mod}" 0644
+        copy_kmod "$_mod"
       done
+  else
+    find /sys/devices -name modalias -exec sort -u {} + |
+    while read -r _mod; do
+        case $(modprobe -S "$kernel" -D "$_mod") in
+            *gpu/drm*) copy_kmod "$_mod"
+        esac 2> /dev/null
+    done
+  fi
 fi
 
 if [[ -x /usr/lib/plymouth/plymouth-populate-initrd ]]; then
