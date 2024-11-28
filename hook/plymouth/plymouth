@@ -1,21 +1,29 @@
+# vim: set ft=sh:
+# shellcheck shell=sh
+#
+# https://shellcheck.net/wiki/SC2154
+# shellcheck disable=2154
 
-if [ -z $plymouth_nocopymodule ] && [ -z $monolith ]; then
-  if [ -z $hostonly ]; then
-  cd "${moddir}/${kernel}/kernel" && \
-    find drivers/gpu/drm -type f 2> /dev/null |
+if [ -f "/usr/lib/plymouth/plymouth-populate-initrd" ]; then
+
+  /usr/lib/plymouth/plymouth-populate-initrd -t "${tmpdir}"
+
+  if [ -z "$plymouth_nocopymodule" ] && [ "$modules_copy" != "off" ]; then
+    if [ "$modules_copy" = "all" ]; then
+      cd "$moddir/$kernel/kernel" && \
+      find drivers/gpu/drm -type f 2> /dev/null |
+        while read -r _mod; do
+          copy_kmod "$_mod"
+        done
+    else
+      find /sys/devices -name modalias -exec sort -u {} + |
       while read -r _mod; do
-        copy_kmod "$_mod"
+          case $(modprobe -S "$kernel" -D "$_mod") in
+              *gpu/drm*) copy_kmod "$_mod"
+          esac 2> /dev/null
       done
-  else
-    find /sys/devices -name modalias -exec sort -u {} + |
-    while read -r _mod; do
-        case $(modprobe -S "$kernel" -D "$_mod") in
-            *gpu/drm*) copy_kmod "$_mod"
-        esac 2> /dev/null
-    done
+    fi
   fi
-fi
-
-if [[ -x /usr/lib/plymouth/plymouth-populate-initrd ]]; then
-  /usr/lib/plymouth/plymouth-populate-initrd -t ${tmpdir}
+else
+  print "plymouth is not installed, skip hook"
 fi

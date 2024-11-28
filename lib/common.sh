@@ -11,10 +11,7 @@ print()
 
 panic()
 {
-
-    if [ -f "/usr/sbin/plymouthd" ] && [ -f /usr/bin/plymouth ]; then
-        /usr/bin/plymouth quit
-    fi
+    eval_hooks init.fail
 
     print "${1:-unexpected error occurred}" '!>' >&2
 
@@ -101,10 +98,13 @@ copy_exec()
 
 copy_kmod()
 {
-    if modinfo -k $kernel $1 >/dev/null 2>&1; then
-        modname=$(modinfo -k $kernel -F name $1 | cut -d ' ' -f1 | head -n1)
+    # prevent modules to be copied even in hooks
+    [ "$modules_copy"  = "off" ] && return
+
+    if modinfo -k "$kernel" "$1" >/dev/null 2>&1; then
+        modname=$(modinfo -k "$kernel" -F name "$1" | cut -d ' ' -f1 | head -n1)
         [ "$modname" = "name:" ] && return 0
-        modpath=$(modinfo -k $kernel -F filename $1 | cut -d ' ' -f1 | head -n1)
+        modpath=$(modinfo -k "$kernel" -F filename "$1" | cut -d ' ' -f1 | head -n1)
         [ "$modpath" = "name:" ] && return 0
         [ "$modpath" = "(builtin)" ] && return 0
     else
@@ -113,23 +113,23 @@ copy_kmod()
     fi
     [ -f "${tmpdir}/$modpath" ] && return
     copy_file "$modpath"
-    modinfo -F firmware -k $kernel $modname | while read -r line; do
+    modinfo -F firmware -k "$kernel" "$modname" | while read -r line; do
         firmwarefile=""
         for comp_format in "" gz xz zst; do
-            if [ -f /lib/firmware/$line.$comp_format ]; then
-                firmwarefile=$line.$comp_format
+            if [ -f "/lib/firmware/$line.$comp_format" ]; then
+                firmwarefile="$line.$comp_format"
                 break
             fi
         done
-        if [ ! -f /lib/firmware/$firmwarefile ]; then
+        if [ ! -f "/lib/firmware/$firmwarefile" ]; then
             print "missing firmware for $modname: $line"
         else
-            copy_file /lib/firmware/$firmwarefile
+            copy_file "/lib/firmware/$firmwarefile"
         fi
     done
 
-    for i in $(modinfo -F depends -k $kernel $modname | tr ',' ' '); do
-        copy_kmod $i
+    for i in $(modinfo -F depends -k "$kernel" "$modname" | tr ',' ' '); do
+        copy_kmod "$i"
     done
 
     unset modname modpath firmwarefile
@@ -145,7 +145,7 @@ copy_hook()
 
     [ -f "$_hook" ] || panic "unable to find hook: $1"
 
-    for _ext in init init.late; do
+    for _ext in init init.late init.fail; do
         [ -f "${_hook}.${_ext}" ] || continue
 
         print "copying hook: ${1}.${_ext}"
