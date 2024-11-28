@@ -1,6 +1,7 @@
 # vim: set ft=sh:
+# shellcheck shell=sh
 #
-# false positive
+# https://shellcheck.net/wiki/SC2154
 # shellcheck disable=2154
 
 modprobe -a cdrom loop overlay squashfs 
@@ -14,10 +15,10 @@ mkdir -p "$medium" "$system" /run/initramfs/overlayfs/work /run/initramfs/overla
 
 live_disk_fs=${live_disk_fs:-iso9660}
 
-mount -t ${live_disk_fs} -o ro "/dev/disk/by-$live_disk_type/$live_disk" "$medium" || panic "unable to mount live medium"
+mount -t "$live_disk_fs" -o ro "/dev/disk/by-$live_disk_type/$live_disk" "$medium" || panic "unable to mount live medium"
 
 mkdir -p /run/initramfs/ram
-if [ "$ram" == "1" ]; then
+if [ "$live_ram" = "1" ]; then
     mount -t tmpfs -o "${live_ram_opts:?}" ram /run/initramfs/ram || panic "unable to mount ramdisk for live"
 fi
 
@@ -34,7 +35,7 @@ do
     sfsimg="$line"
     sfsimg_path="$medium/live/sfs/$sfsimg.sfs"
     
-    if [ "$ram" == "1" ]; then
+    if [ "$live_ram" = "1" ]; then
         cp "${sfsimg_path}" /run/initramfs/ram/ || panic "unable to copy squashfs, insufficient memory?"
         sfsimg_path="/run/initramfs/ram/$sfsimg.sfs"
     fi
@@ -45,9 +46,11 @@ do
     mount -t squashfs -o "${live_sfs_opts:-defaults,ro}" "$sfsdev" "$system/$sfsimg" || panic "can not mount overlay squashfs"
 done < "$medium/live/${live_profile}.list"
 
-root_opts_arg=`tac $medium/live/${live_profile}.list | sed "/^$/d; s@^@$system/@" | tr '\n' ':'`
+root_opts_arg=$(tac $medium/live/${live_profile}.list | sed "/^$/d; s@^@$system/@" | tr '\n' ':')
 root_opts="lowerdir=${root_opts_arg%:},upperdir=/run/initramfs/overlayfs/write,workdir=/run/initramfs/overlayfs/work"
 
-if [ "$ram" == "1" ]; then
+if [ "$live_ram" = "1" ]; then
     umount "$medium"
 fi
+
+export root_opts

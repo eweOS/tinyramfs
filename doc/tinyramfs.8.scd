@@ -1,4 +1,4 @@
-tinyramfs(8) "tinyramfs" "2022-05-09"
+tinyramfs(8) "tinyramfs" "2024-12-03"
 
 # NAME
 

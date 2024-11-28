@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# https://shellcheck.net/wiki/SC1091
+# shellcheck disable=1091
 . ../lib/common.sh
 
 cleanup()
@@ -50,6 +52,8 @@ EOF
 cat > "$config" << EOF
 hooks=$devmgr
 root=LABEL=root
+modules_copy=config
+modules_list="lib arch drivers/block"
 EOF
 
 mkdir -p "$root"

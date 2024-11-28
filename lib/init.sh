@@ -44,23 +44,31 @@ parse_cmdline()
     # ... parameters with '=' go into init's environment ...
     for _param in $cmdline; do case $_param in
         # pass to init
-        --)           init_args+=${cmdline#*--}; break ;;
-        quiet)        init_args+=" --quiet" ;;
+        --)           init_args="${init_args}${cmdline#*--}"; break ;;
+        quiet)        init_args="${init_args} --quiet" ;;
 
-        rdpanic) trap - EXIT ;;
-        rddebug) set -x ;;
-        break) break_init=1 ;;
+        # internal functions
+        panic) trap - EXIT ;;
+        verbose) set -x ;;
+        debug) break_init=1 ;;
 
         # Maintain backward compatibility with kernel parameters.
+        init=*)       init=${_param#*=} ;;
+
+        # mounting
+        root)         root=${_param#*=} ;;
         ro | rw)      rorw=$_param ;;
         rootwait)     root_wait=-1 ;;
         rootfstype=*) root_type=${_param#*=} ;;
         rootflags=*)  root_opts=${_param#*=} ;;
         rootdelay=*)  root_wait=${_param#*=} ;;
-        init=*)       init=${_param#*=} ;;
+
+        # plymouth
         nosplash=*)   plymouth_nosplash=1 ;;
+
+        # live
         live=*)       live_profile=${_param#*=} ;;
-        ram=*)        ram=${_param#*=} ;;
+        ram=*)        live_ram=${_param#*=} ;;
     esac; done
 }
 
@@ -120,8 +128,11 @@ trap panic EXIT
 
 init_base
 parse_cmdline
+
 (test $break_init && busybox --install && sh) || :
+
 eval_hooks init
 mount_root
 eval_hooks init.late
+
 boot_system

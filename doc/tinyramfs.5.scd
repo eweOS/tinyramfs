@@ -1,4 +1,4 @@
-tinyramfs(5) "tinyramfs" "2022-05-09"
+tinyramfs(5) "tinyramfs" "2024-12-03"
 
 # NAME
 
@@ -22,19 +22,54 @@ Options which expect a device as a value can also refer to the device via
 *UUID*, *LABEL*, and *PARTUUID* (eg. LABEL=<label>). This requires a blkid
 utility which supports that identifier.
 
-root
-
-	The device your root filesystem is located on.
-
 hooks
 
 	A comma separated list of hooks to include in the initramfs. Hooks can
 	be found in /lib/tinyramfs/hook.d/.
 
-monolith
+## MOUNTING
 
-	(bool) Instructs tinyramfs whether or not to include kernel modules in
-	the initramfs.
+root
+
+	The device your root filesystem is located on.
+
+	(available formats: /dev/sdX, LABEL=label, PARTUUID=partuuid, UUID=uuid)
+	
+	Note: using /dev/sdX is not recommeded since device path mappings may change
+	after changing hardware or even updating the kernel.
+
+root_type
+
+	The filesystem you're using for your root device (eg. ext4).
+
+root_opts
+
+	Arguments passed to mount command when mounting root device.
+
+rorw
+
+	Define root partition ro/rw mounting, default to use ro to make use of init system.
+	
+	(available options: ro, rw)
+
+## MODULES
+
+modules_copy
+
+	Instructs tinyramfs whether or not to include kernel modules in the initramfs.
+	
+	off: prevent modules to be copied
+	hostonly: (default) copy only modules used in host system
+	config: copy only modules defined (modules_list) in config files
+	all: copy all modules (likely to be HUGE!!!)
+	
+	(available options: off, hostonly, config, all)
+
+modules_list
+
+	Define modules to be copied when modules_copy=config, will be passed to "find" command
+
+## COMPRESSION
 
 compress
 
@@ -42,66 +77,11 @@ compress
 	arbitrary commands (eg. 'gzip -9'). Use 'cat' for an uncompressed
 	initramfs.
 
-hostonly
-
-	(bool) Whether or not to only copy modules specific to your system.
-
-root_type
-
-	The filesystem you're using for your root device (eg. ext4).
-
-## KEYMAP
+## LOADKEYMAP / LOADKEYS
 
 keymap_path
 
 	Path to your keymap.
-
-## LUKS
-
-luks_discard
-
-	(bool) Allow the use of discard (TRIM) requests for your luks device.
-
-	*WARNING*: This option may have a negative security impact. For more info
-	read *cryptsetup*(8).
-
-luks_header
-
-	Path to your LUKS header.
-
-luks_root
-
-	The device your LUKS volume is located on.
-
-luks_name
-
-	The name to map your LUKS device to.
-
-luks_key
-
-	Path to your LUKS keyfile.
-
-## LVM
-
-lvm_config
-
-	Path to your LVM configuration file.
-
-lvm_discard
-
-	(bool) Allow the use of discard (TRIM) requests for your LVM device.
-
-lvm_group
-
-	The name of your LVM volume group.
-
-lvm_name
-
-	The name of your LVM logical volume.
-
-lvm_tag
-
-	The tag of your LVM logical volume.
 
 ## RESUME
 
@@ -109,15 +89,43 @@ resume
 
 	The location of your swap partition.
 
-## ZFS
+## LIVE
 
-zfs_key
+live_disk_type
 
-	Path to your ZFS keyfile.
+	Define live medium partition locator type
 
-zfs_root
+	(available format: label, partuuid, uuid)
 
-	The device your ZFS volume is located on.
+live_disk
+
+	define live medium partition located in /dev/disk/by-live_disk_type
+
+live_disk_fs
+
+	define live medium partition fs type, iso9660 by default
+
+live_sfs_opts
+
+	define squashfs mount options, "defaults,ro" by default
+
+live_ram
+
+	define if squashfs should be copied into ram
+
+live_ram_opts
+
+	define ramdisk mounting options
+
+## PLYMOUTH
+
+plymouth_nocopymodule
+
+	define to prevent copying modules during plymouth hook
+
+plymouth_earlyquit
+
+	define to quit plymouth when late hook executed (instead of using init system)
 
 # FILES
 

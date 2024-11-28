@@ -87,12 +87,11 @@ copy_hooks()
 
 copy_modules()
 {
-    # Skip this function if kernel
-    # compiled with builtin modules.
-    if [ "$monolith" ]; then
-        return
+    modules_copy=${modules_copy:-"hostonly"}
 
-    elif [ "$hostonly" ]; then
+    case "$modules_copy" in
+
+    "hostonly")
         print 'copying hostonly modules'
 
         # Perform autodetection of modules via /sys
@@ -116,38 +115,53 @@ copy_modules()
                 [ "$_dir" = / ] && break
             done < /proc/mounts || panic 'unable to detect rootfs module'
 
-            copy_kmod "$_type"
+        copy_kmod "$_type"
         fi
-    else
+    ;;
+
+    "all")
         print 'copying all modules'
 
         (
             cd "${moddir}/${kernel}/kernel"
 
-            find \
-                fs lib arch crypto drivers/md drivers/ata drivers/scsi \
-                drivers/block drivers/virtio drivers/usb/host \
-                drivers/usb/storage drivers/input/keyboard drivers/mmc \
-		-type f 2> /dev/null |
+            find . -type f 2> /dev/null |
 
             while read -r _mod; do
-                copy_file "$_mod" "/lib/modules/${kernel}/kernel/${_mod}" 0644
+                copy_kmod "$_mod"
             done
         )
+    ;;
+
+    "config")
+        print 'copying configured modules'
+
+        (
+            cd "${moddir}/${kernel}/kernel"
+
+            # https://shellcheck.net/wiki/SC2086
+            # shellcheck disable=2086
+            find ${modules_list} -type f 2> /dev/null |
+
+            while read -r _mod; do
+                copy_kmod "$_mod"
+            done
+        )
+    ;;
+
+    esac
+
+    if [ "$modules_copy" != "off" ]; then
+        copy_exec modprobe
+
+        for _modules_files in modules.order modules.builtin modules.builtin.modinfo; do
+            copy_file "${moddir}/${kernel}/${_modules_files}" \
+                "/lib/modules/${kernel}/${_modules_files}" 0644
+        done
+        unset _modules_files
+
+        depmod -b "$tmpdir" "$kernel"
     fi
-
-    copy_exec modprobe
-
-    copy_file "${moddir}/${kernel}/modules.order" \
-              "/lib/modules/${kernel}/modules.order" 0644
-
-    copy_file "${moddir}/${kernel}/modules.builtin" \
-              "/lib/modules/${kernel}/modules.builtin" 0644
-
-    copy_file "${moddir}/${kernel}/modules.builtin.modinfo" \
-              "/lib/modules/${kernel}/modules.builtin.modinfo" 0644
-
-    depmod -b "$tmpdir" "$kernel"
 }
 
 create_image()
@@ -196,7 +210,7 @@ shift "$((OPTIND - 1))"
 # -f: Disable globbing *?[]
 set -ef
 
-# https://shellcheck.net/wiki/SC1090
+# https://shellcheck.net/wiki/SC1091
 # shellcheck disable=1090
 . "$shrd"
 

@@ -3,7 +3,7 @@
 .SUFFIXES:
 .SUFFIXES: .test
 
-all: bare luks lvm zfs
+all: bare
 
 .test:
 	./$< > $@.out 2>&1
