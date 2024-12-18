@@ -11,10 +11,7 @@ print()
 
 panic()
 {
-
-    if [ -f "/usr/sbin/plymouthd" ] && [ -f /usr/bin/plymouth ]; then
-        /usr/bin/plymouth quit
-    fi
+    eval_hooks init.fail
 
     print "${1:-unexpected error occurred}" '!>' >&2
 
@@ -30,6 +27,7 @@ panic()
 copy_file()
 (
     file=$1; dest=$2
+    [ "$dest" ] || dest=$file
 
     [ -e "${tmpdir}/${dest}" ] && return
 
@@ -43,6 +41,7 @@ copy_file()
 
         case $symlink in
             /*) file=$symlink ;;
+            .*) file="${PWD}/${symlink}" ;;
             *)  file="${PWD}/${symlink##*/}" ;;
         esac
     done
@@ -93,17 +92,47 @@ copy_exec()
         _lib=${_lib#* => }
         _lib=${_lib% *}
 
-        [ -e "$_lib" ] && copy_file "$_lib" "$_lib" 0755 1
+        [ -e "$_lib" ] && copy_file "$_lib" "" 0755 1
     done
 }
 
 copy_kmod()
 {
-    modprobe -S "$kernel" -D "$1" 2> /dev/null |
+    # prevent modules to be copied even in hooks
+    [ "$modules_copy"  = "off" ] && return
 
-    while read -r _ _mod _ || [ "$_mod" ]; do
-        case $_mod in /*) copy_file "$_mod" "$_mod" 0644; esac
+    if modinfo -k "$kernel" "$1" >/dev/null 2>&1; then
+        modname=$(modinfo -k "$kernel" -F name "$1" | cut -d ' ' -f1 | head -n1)
+        [ "$modname" = "name:" ] && return 0
+        modpath=$(modinfo -k "$kernel" -F filename "$1" | cut -d ' ' -f1 | head -n1)
+        [ "$modpath" = "name:" ] && return 0
+        [ "$modpath" = "(builtin)" ] && return 0
+    else
+        print "missing module: $1"
+        return
+    fi
+    [ -f "${tmpdir}/$modpath" ] && return
+    copy_file "$modpath"
+    modinfo -F firmware -k "$kernel" "$modname" | while read -r line; do
+        firmwarefile=""
+        for comp_format in "" gz xz zst; do
+            if [ -f "/lib/firmware/$line.$comp_format" ]; then
+                firmwarefile="$line.$comp_format"
+                break
+            fi
+        done
+        if [ ! -f "/lib/firmware/$firmwarefile" ]; then
+            print "missing firmware for $modname: $line"
+        else
+            copy_file "/lib/firmware/$firmwarefile"
+        fi
     done
+
+    for i in $(modinfo -F depends -k "$kernel" "$modname" | tr ',' ' '); do
+        copy_kmod "$i"
+    done
+
+    unset modname modpath firmwarefile
 }
 
 # TODO allow full path to hook
@@ -116,7 +145,7 @@ copy_hook()
 
     [ -f "$_hook" ] || panic "unable to find hook: $1"
 
-    for _ext in init init.late; do
+    for _ext in init init.late init.fail; do
         [ -f "${_hook}.${_ext}" ] || continue
 
         print "copying hook: ${1}.${_ext}"
