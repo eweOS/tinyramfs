@@ -9,6 +9,29 @@ print()
     printf "%s %s\n" "${2:-">>"}" "$1"
 }
 
+print_loglevel()
+{
+    [ "$1" -gt "$loglevel" ] && return
+    prefix=""
+    case "$1" in
+        0) prefix="ERROR:" ;;
+        1) prefix="WARN:"  ;;
+        2) prefix="INFO:"  ;;
+    esac
+    print "$2" "$prefix"
+    unset prefix
+}
+
+print_warn()
+{
+    print_loglevel 1 "$1"
+}
+
+print_verbose()
+{
+    print_loglevel 2 "$1"
+}
+
 panic()
 {
     eval_hooks init.fail
@@ -108,7 +131,7 @@ copy_kmod()
         [ "$modpath" = "name:" ] && return 0
         [ "$modpath" = "(builtin)" ] && return 0
     else
-        print "missing module: $1"
+        print_verbose "missing module: $1"
         return
     fi
     [ -f "${tmpdir}/$modpath" ] && return
@@ -122,7 +145,7 @@ copy_kmod()
             fi
         done
         if [ ! -f "/lib/firmware/$firmwarefile" ]; then
-            print "missing firmware for $modname: $line"
+            print_warn "missing firmware for $modname: $line"
         else
             copy_file "/lib/firmware/$firmwarefile"
         fi
