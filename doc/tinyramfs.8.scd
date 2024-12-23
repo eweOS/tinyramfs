@@ -45,6 +45,10 @@ unlocking encrypted drives, mounting needed filesystems, etc.
 
 	Look for kernel modules in <path>, instead of /lib/modules/.
 
+*-v*
+
+	Increase logging verbosity..
+
 # FILES
 
 /lib/tinyramfs/hook.d/

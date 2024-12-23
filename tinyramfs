@@ -14,6 +14,7 @@ usage: ${0##*/} [option]... <output>
     -l         enable local mode
     -d         enable debug mode
     -f         overwrite initramfs image
+    -v         increase logging verbosity
     -h         display this message
 EOF
 
@@ -177,15 +178,20 @@ create_image()
     print "done: $output" '+>'
 }
 
-while getopts c:k:m:ldfh opt; do case $opt in
+# 0: error
+# 1: warning
+# 2: info
+loglevel=1
+while getopts c:k:m:ldfvh opt; do case $opt in
     c) config=$OPTARG ;;
     k) kernel=$OPTARG ;;
     m) moddir=$OPTARG ;;
-    l) local=1 ;;
-    d) debug=1 ;;
-    f) force=1 ;;
-    h) usage 0 ;;
-    ?) usage 2 ;;
+    l) local=1        ;;
+    d) debug=1        ;;
+    f) force=1        ;;
+    v) loglevel=$((loglevel + 1)) ;;
+    h) usage 0        ;;
+    ?) usage 2        ;;
 esac; done
 
 shift "$((OPTIND - 1))"
