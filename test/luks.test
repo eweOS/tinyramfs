@@ -7,6 +7,7 @@
 cleanup()
 {
     umount "${tmpdir}/root" || :
+    cryptsetup close "$name" || :
     qemu-nbd -d "$nbd" || :
     rm -rf "$tmpdir"
 }
@@ -14,7 +15,7 @@ cleanup()
 set -ef
 trap cleanup EXIT INT
 
-nbd=${NBD:-/dev/nbd1}
+nbd=${NBD:-/dev/nbd2}
 devmgr=${DEVMGR:-proc}
 arch=${ARCH:-$(uname -m)}
 kernel=${KERNEL:-$(uname -r)}
@@ -22,6 +23,7 @@ vmlinuz=${VMLINUZ:-"/boot/vmlinuz-${kernel}"}
 
 mkdir -p "${tmpdir:=${TMPDIR:-/tmp}/${0##*/}.$$}"
 
+name="luks$$"
 root="${tmpdir}/root"
 config="${tmpdir}/config"
 image="${tmpdir}/root.qcow2"
@@ -49,17 +51,23 @@ p
 w
 EOF
 
+dd bs=512 count=1 if=/dev/urandom of="${tmpdir}/key"
+
+cryptsetup -qd "${tmpdir}/key" --pbkdf=pbkdf2 luksFormat "${nbd}p1"
+cryptsetup  -d "${tmpdir}/key" open "${nbd}p1" "$name"
+
 cat > "$config" << EOF
-hooks=$devmgr
-root=LABEL=root
+hooks=$devmgr,luks
+root=UUID=$(cryptsetup luksUUID "${nbd}p1")
+luks_key=${tmpdir}/key
 modules_copy=config
 modules_list="lib arch drivers/block"
 EOF
 
 mkdir -p "$root"
 
-mkfs.ext4 -L root "${nbd}p1"
-mount "${nbd}p1" "$root"
+mkfs.ext4 -L root "/dev/mapper/${name}"
+mount "/dev/mapper/${name}" "$root"
 
 (
     _tmpdir=$root; cd "$_tmpdir"
@@ -87,6 +95,7 @@ EOF
 )
 
 umount "$root"
+cryptsetup close "$name"
 qemu-nbd -d "$nbd"
 
 (cd .. && ./tinyramfs -lk "$kernel" -c "$config" "$initrd")
@@ -120,4 +129,6 @@ fdisk "$nbd" << EOF
 w
 EOF
 
-[ "$(e2label "${nbd}p1")" = success ]
+cryptsetup -d "${tmpdir}/key" open "${nbd}p1" "$name"
+
+[ "$(e2label "/dev/mapper/${name}")" = success ]

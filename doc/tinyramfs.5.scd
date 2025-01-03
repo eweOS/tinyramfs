@@ -83,6 +83,31 @@ keymap_path
 
 	Path to your keymap.
 
+## LUKS
+
+luks_discard
+
+	(bool) Allow the use of discard (TRIM) requests for your luks device.
+
+	*WARNING*: This option may have a negative security impact. For more info
+	read *cryptsetup*(8).
+
+luks_header
+
+	Path to your LUKS header.
+
+luks_root
+
+	The device your LUKS volume is located on.
+
+luks_name
+
+	The name to map your LUKS device to.
+
+luks_key
+
+	Path to your LUKS keyfile.
+
 ## RESUME
 
 resume

@@ -5,7 +5,7 @@
 .nh
 .ad l
 .\" Begin generated content:
-.TH "tinyramfs" "5" "2024-12-17" "tinyramfs" "2024-12-03"
+.TH "tinyramfs" "5" "2025-01-03" "tinyramfs" "2024-12-03"
 .P
 .SH NAME
 .P
@@ -106,6 +106,41 @@ keymap_path
 .P
 .RS 4
 Path to your keymap.\&
+.P
+.RE
+.SS LUKS
+.P
+luks_discard
+.P
+.RS 4
+(bool) Allow the use of discard (TRIM) requests for your luks device.\&
+.P
+\fBWARNING\fR: This option may have a negative security impact.\& For more info
+read \fBcryptsetup\fR(8).\&
+.P
+.RE
+luks_header
+.P
+.RS 4
+Path to your LUKS header.\&
+.P
+.RE
+luks_root
+.P
+.RS 4
+The device your LUKS volume is located on.\&
+.P
+.RE
+luks_name
+.P
+.RS 4
+The name to map your LUKS device to.\&
+.P
+.RE
+luks_key
+.P
+.RS 4
+Path to your LUKS keyfile.\&
 .P
 .RE
 .SS RESUME
