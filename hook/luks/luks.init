@@ -1,0 +1,85 @@
+# vim: set ft=sh:
+# shellcheck shell=sh
+#
+# https://shellcheck.net/wiki/SC2154
+# shellcheck disable=2154
+
+# https://shellcheck.net/wiki/SC2034
+# shellcheck disable=2034
+DM_DISABLE_UDEV=1
+
+if [ ! -f "/usr/bin/cryptsetup" ]; then
+    panic "cryptsetup not installed"
+fi
+
+mkdir -p /run/cryptsetup
+
+if [ -z "$luks_root" ]; then
+    luks_root=$root
+fi
+
+if [ -n "$luks_key" ] && [ ! -f "$luks_key" ]; then
+    print_warn "Keyfile could not be opened. Reverting to passphrase."
+    unset luks_key
+fi
+
+resolve_device "$luks_root"
+
+luks_discard=${luks_discard:+--allow-discards}
+luks_header=${luks_header:+--header="$luks_header"}
+luks_key=${luks_key:+--key-file="$luks_key"}
+luks_name="${luks_name:-crypt-${device##*/}}"
+
+if [ -b "/dev/mapper/${luks_name}" ]; then
+    print_warn "Device ${luks_name} already exists, not doing any crypt setup."
+else
+    if cryptsetup isLuks "${device}" >/dev/null 2>&1; then
+        luks_succeeded=0
+
+        # If keyfile exists, try to use that first
+        if [ -n "$luks_key" ]; then
+            # https://shellcheck.net/wiki/SC2086
+            # shellcheck disable=2086
+            if eval cryptsetup open ${luks_discard} ${luks_header} ${luks_key} -- "$device" "$luks_name"; then
+                luks_succeeded=1
+            else
+                print_warn "Invalid keyfile. Reverting to passphrase."
+            fi
+        fi
+
+        # Ask for a passphrase
+        if [ "$luks_succeeded" -ne "1" ]; then
+            if [ -f "/usr/bin/plymouthd" ] && \
+                [ -f "/usr/bin/plymouth" ] && \
+                [ -z "$plymouth_nosplash" ] && \
+                plymouth --ping 2>/dev/null; then
+                plymouth ask-for-password \
+                    --prompt="A password is required to access the ${luks_name} volume" \
+                    --command="cryptsetup open --key-file=- ${luks_discard} ${luks_header} -- $device $luks_name"
+            else
+                echo ""
+                echo "A password is required to access the ${luks_name} volume:"
+
+                #loop until we get a real password
+                # https://shellcheck.net/wiki/SC2086
+                # shellcheck disable=2086
+                while ! eval cryptsetup open ${luks_discard} ${luks_header} -- "$device" "$luks_name"; do
+                    sleep 2;
+                done
+            fi
+        fi
+
+        unset luks_succeeded
+
+        if [ -e "/dev/mapper/${luks_name}" ]; then
+            if [ "$luks_root" = "$root" ]; then
+                root="/dev/mapper/${luks_name}"
+            fi
+        else
+            panic "Password succeeded, but ${luks_name} creation failed, aborting..."
+        fi
+
+    else
+        panic "Failed to open encryption mapping: The device ${device} is not a LUKS volume."
+    fi
+fi

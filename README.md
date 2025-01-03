@@ -8,6 +8,7 @@ Tiny initramfs written in POSIX shell for eweOS, forked from https://github.com/
 - Portable, not distro specific
 - Easy to use configuration
 - Make time and init time hooks
+- LUKS (detached header, key)
 - mdev supported
 - Resume from swap partition
 
@@ -27,6 +28,8 @@ Tiny initramfs written in POSIX shell for eweOS, forked from https://github.com/
   - Optional. Required for UUID, LABEL, PARTUUID support
 * `mdev` OR CONFIG_UEVENT_HELPER
   - Optional. Required for modular kernel, /dev/mapper/* and /dev/disk/* creation
+* `cryptsetup`
+  - Optional. Required for LUKS support
 * `busybox loadkmap` OR `kbd loadkeys`
   - Optional. Required for keymap support
 * `plymouth`

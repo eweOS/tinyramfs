@@ -3,7 +3,7 @@
 .SUFFIXES:
 .SUFFIXES: .test
 
-all: bare
+all: bare luks
 
 .test:
 	./$< > $@.out 2>&1

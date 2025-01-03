@@ -4,6 +4,8 @@
 # https://shellcheck.net/wiki/SC2034
 # shellcheck disable=2154,2034
 
+_tinyramfs=1
+
 init_base()
 {
     mount -t proc     -o nosuid,noexec,nodev     proc /proc

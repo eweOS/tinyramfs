@@ -34,7 +34,8 @@ print_verbose()
 
 panic()
 {
-    eval_hooks init.fail
+    # if inside initramfs
+    [ -z "$_tinyramfs" ] || eval_hooks init.fail
 
     print "${1:-unexpected error occurred}" '!>' >&2
 
